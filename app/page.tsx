@@ -1,103 +1,356 @@
-import Image from "next/image";
+"use client"
+
+import { Download, CircleIcon, MoveRight, Pencil, RectangleHorizontal, Hand } from "lucide-react";
+import { Button } from "@/components/ui/button"
+import { Layer, Rect, Stage, Circle, Arrow, Line, Transformer } from "react-konva";
+import { useRef, useState } from "react";
+import { ACTIONS } from "./actions"
+import { v4 as uuidv4 } from "uuid"
+
+
+interface RectangleProps {
+  id: string,
+  x: number
+  y: number
+  height: number
+  width: number
+  fillColor: string
+}
+
+interface CircleProps {
+  id?: string,
+  x: number
+  y: number
+  radius: number | string
+  fillColor: string
+}
+
+interface ArrowProps {
+
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+
+  const [fillColor, setFillColor] = useState("#FF0000") // Default Red color
+  const [strokeColor, setStrokeColor] = useState("#FFFFFF")
+  const [action, setAction] = useState(ACTIONS.circle)
+  const [rectangles, setRectangles] = useState<RectangleProps[]>([])
+  const [circles, setCircles] = useState<CircleProps[]>([])
+  const [arrows, setArrows] = useState<{ id: string; points: number[]; strokeColor: string }[]>([]);
+  const [lines, setLines] = useState<{ id: string; points: number[]; strokeColor: string }[]>([]);
+
+  const [position, setPosition] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const transformerRef = useRef<any>(null);
+
+  const StageRef = useRef<any>(null);
+  const isPainting = useRef<boolean>(true);
+  const currentShapeId = useRef("")
+
+  const onPointerDown = () => {
+    if (action === ACTIONS.select) {
+      return;
+    }
+
+    const stage = StageRef.current
+    const { x, y } = stage.getPointerPosition();
+    const id = uuidv4()
+    currentShapeId.current = id;
+    isPainting.current = true;
+
+    switch (action) {
+
+      case ACTIONS.rectangle:
+        setRectangles((rectangles) => [
+          ...rectangles,
+          {
+            id,
+            x,
+            y,
+            height: 0,
+            width: 0,
+            fillColor,
+          }
+        ])
+        break;
+
+
+      case ACTIONS.circle:
+        setCircles((circles) => [
+          ...circles,
+          {
+            id,
+            x,
+            y,
+            radius: 20,
+            fillColor,
+          }
+        ])
+        break;
+
+      case ACTIONS.arrow:
+        setArrows((arrows) => [
+          ...arrows,
+          {
+            id,
+            points: [x, y, x, y],
+            strokeColor,
+          },
+        ]);
+        break;
+
+      case ACTIONS.pencil:
+        setLines((lines) => [
+          ...lines,
+          {
+            id,
+            points: [x, y],
+            strokeColor,
+          },
+        ]);
+        break;
+
+    }
+  }
+
+  const onPointerMove = () => {
+    if (action === ACTIONS.select || !isPainting.current) {
+      return;
+    }
+
+    const stage = StageRef.current
+    const { x, y } = stage.getPointerPosition();
+
+
+    switch (action) {
+      case ACTIONS.rectangle:
+        setRectangles((rectangles) => rectangles.map((rectangle) => {
+          if (rectangle.id === currentShapeId.current) {
+            return {
+              ...rectangle,
+              width: x - rectangle.x,
+              height: y - rectangle.y
+            }
+          }
+          return rectangle;
+        }))
+        break;
+
+      case ACTIONS.circle:
+        setCircles((circles) => circles.map((circle) => {
+          if (circle.id === currentShapeId.current) {
+            return {
+              ...circle,
+              radius: ((y - circle.y) ** 2 + (x - circle.x) ** 2) ** 0.5,
+            }
+          }
+          return circle;
+        }))
+        break;
+
+      case ACTIONS.arrow:
+        setArrows((arrows) =>
+          arrows.map((arrow) => {
+            if (arrow.id === currentShapeId.current) {
+              return {
+                ...arrow,
+                points: [arrow.points[0], arrow.points[1], x, y],
+              };
+            }
+            return arrow;
+          })
+        );
+        break;
+
+      case ACTIONS.pencil:
+        setLines((lines) =>
+          lines.map((line) => {
+            if (line.id === currentShapeId.current) {
+              return {
+                ...line,
+                points: [...line.points, x, y],
+              };
+            }
+            return line;
+          })
+        );
+        break;
+
+    }
+
+  }
+
+  const onPointerUp = () => {
+    isPainting.current = false
+  }
+
+  const ExportImage = () => {
+    if (StageRef.current) { // Added a check to ensure StageRef.current is not null
+      const uri = StageRef.current.toDataURL();
+      var link = document.createElement('a')
+      link.download = "image.png"
+      link.href = uri
+      document.body.appendChild(link)
+      link.click();
+      document.body.removeChild(link)
+    }
+  }
+
+  const isDraggable = action === ACTIONS.select
+
+
+  const onclick = (e: any) => {
+    if (action != ACTIONS.select) return;
+    const target = e.currentTarget;
+    transformerRef.current.nodes([target])
+  }
+
+
+  return (
+    <main className="w-screen h-screen bg-black/100">
+      <div className="flex justify-center w-full bg-purple-100 items-center p-3 gap-3">
+
+        <Button className="w-10 h-10 bg-black cursor-pointer rounded-full" onClick={() => setAction(ACTIONS.select)}>
+          <Hand />
+        </Button>
+
+        <Button className="w-10 h-10 bg-black cursor-pointer rounded-full" onClick={() => setAction(ACTIONS.rectangle)}>
+          <RectangleHorizontal style={{ width: '100%', height: '70%' }} />
+        </Button>
+
+
+        <Button className="w-10 h-10 bg-black cursor-pointer rounded-full" onClick={() => setAction(ACTIONS.circle)} >
+          <CircleIcon style={{ width: '100%', height: '70%' }} />
+        </Button>
+        <Button className="w-10 h-10 bg-black cursor-pointer rounded-full" onClick={() => setAction(ACTIONS.arrow)} >
+          <MoveRight style={{ width: '100%', height: '70%' }} />
+        </Button>
+        <Button className="w-10 h-10 bg-black cursor-pointer rounded-full" onClick={() => setAction(ACTIONS.pencil)} >
+          <Pencil style={{ width: '100%', height: '70%' }} />
+        </Button>
+        <Button className="w-12 h-10 bg-black cursor-pointer rounded-full">
+          <input type="color" value={fillColor} onChange={(e) => setFillColor(e.target.value)} />
+        </Button>
+        <Button className="w-10 h-10 bg-black cursor-pointer rounded-full" onClick={ExportImage} >
+          <Download style={{ width: '100%', height: '70%' }} />
+        </Button>
+      </div>
+
+      {/* Stage */}
+      <Stage
+        ref={StageRef}
+        width={window.innerWidth}
+        height={window.innerHeight}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+      >
+
+        <Layer>
+          <Rect
+            x={0}
+            y={0}
+            width={window.innerWidth}
+            height={window.innerHeight}
+            stroke={strokeColor}
+            strokeWidth={2}
+            onClick={() => {
+              transformerRef.current.nodes([])
+            }}
+          />
+
+          {rectangles.map((rectangle) => (
+            <Rect
+              key={rectangle.id}
+              x={rectangle.x}
+              y={rectangle.y}
+              width={rectangle.width}
+              height={rectangle.height}
+              fill={rectangle.fillColor}
+              stroke={strokeColor}
+              strokeWidth={2}
+              draggable={isDraggable}
+              onDragEnd={(e) => {
+                setPosition({
+                  x: e.target.x(),
+                  y: e.target.y()
+                });
+              }}
+              onMouseEnter={(e) => {
+                document.body.style.cursor = 'pointer';
+              }}
+              onMouseLeave={(e) => {
+                document.body.style.cursor = 'default';
+              }}
+              onclick={onclick}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+          ))}
+
+          {circles.map((circle) => (
+            <Circle
+              key={circle.id}
+              x={circle.x}
+              y={circle.y}
+              radius={typeof circle.radius === 'number' ? circle.radius : parseFloat(circle.radius)}
+              fill={circle.fillColor}
+              stroke={strokeColor}
+              strokeWidth={2}
+              draggable={isDraggable}
+              onMouseEnter={(e) => {
+                document.body.style.cursor = 'pointer';
+              }}
+              onMouseLeave={(e) => {
+                document.body.style.cursor = 'default';
+              }}
+              onclick={onclick}
+            />
+          ))}
+
+          {arrows.map((arrow) => (
+            <Arrow
+              key={arrow.id}
+              points={arrow.points}
+              stroke={arrow.strokeColor}
+              strokeWidth={2}
+              pointerLength={10}
+              pointerWidth={10}
+              fill={arrow.strokeColor}
+              draggable={isDraggable}
+              onMouseEnter={(e) => {
+                document.body.style.cursor = 'pointer';
+              }}
+              onMouseLeave={(e) => {
+                document.body.style.cursor = 'default';
+              }}
+              onclick={onclick}
+            />
+          ))}
+
+          {lines.map((line) => (
+            <Line
+              key={line.id}
+              points={line.points}
+              stroke={fillColor}
+              strokeWidth={2}
+              tension={0.5}
+              lineCap="round"
+              globalCompositeOperation="source-over"
+              draggable={isDraggable}
+              onMouseEnter={(e) => {
+                document.body.style.cursor = 'pointer';
+              }}
+              onMouseLeave={(e) => {
+                document.body.style.cursor = 'default';
+              }}
+              onclick={onclick}
+            />
+          ))}
+
+          <Transformer ref={transformerRef} />
+        </Layer>
+      </Stage>
+    </main>
   );
 }
