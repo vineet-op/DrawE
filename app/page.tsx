@@ -1,6 +1,6 @@
 "use client"
 
-import { Download, CircleIcon, MoveRight, Pencil, RectangleHorizontal, Hand } from "lucide-react";
+import { Download, CircleIcon, MoveRight, Pencil, RectangleHorizontal, Hand, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button"
 import { Layer, Rect, Stage, Circle, Arrow, Line, Transformer } from "react-konva";
 import { useRef, useState } from "react";
@@ -40,8 +40,8 @@ export default function Home() {
   const [arrows, setArrows] = useState<{ id: string; points: number[]; strokeColor: string }[]>([]);
   const [lines, setLines] = useState<{ id: string; points: number[]; strokeColor: string }[]>([]);
 
-  const [position, setPosition] = useState({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
   const transformerRef = useRef<any>(null);
 
   const StageRef = useRef<any>(null);
@@ -206,33 +206,45 @@ export default function Home() {
     transformerRef.current.nodes([target])
   }
 
+  const ClearCanvas = () => {
+    setRectangles([]);
+    setCircles([]);
+    setArrows([]);
+    setLines([]);
+  }
+
 
   return (
-    <main className="w-screen h-screen bg-black/100">
+    <main className="w-screen h-screen bg-black/100 overflow-hidden">
       <div className="flex justify-center w-full bg-purple-100 items-center p-3 gap-3">
 
-        <Button className="w-10 h-10 bg-black cursor-pointer rounded-full" onClick={() => setAction(ACTIONS.select)}>
+        <Button className="w-10 h-10 bg-black cursor-pointer hover:bg-purple-500" onClick={() => setAction(ACTIONS.select)}>
           <Hand />
         </Button>
 
-        <Button className="w-10 h-10 bg-black cursor-pointer rounded-full" onClick={() => setAction(ACTIONS.rectangle)}>
+        <Button className="w-10 h-10 bg-black cursor-pointer hover:bg-purple-500" onClick={() => setAction(ACTIONS.rectangle)}>
           <RectangleHorizontal style={{ width: '100%', height: '70%' }} />
         </Button>
 
 
-        <Button className="w-10 h-10 bg-black cursor-pointer rounded-full" onClick={() => setAction(ACTIONS.circle)} >
+        <Button className="w-10 h-10 bg-black cursor-pointer hover:bg-purple-500" onClick={() => setAction(ACTIONS.circle)} >
           <CircleIcon style={{ width: '100%', height: '70%' }} />
         </Button>
-        <Button className="w-10 h-10 bg-black cursor-pointer rounded-full" onClick={() => setAction(ACTIONS.arrow)} >
+        <Button className="w-10 h-10 bg-black cursor-pointer hover:bg-purple-500" onClick={() => setAction(ACTIONS.arrow)} >
           <MoveRight style={{ width: '100%', height: '70%' }} />
         </Button>
-        <Button className="w-10 h-10 bg-black cursor-pointer rounded-full" onClick={() => setAction(ACTIONS.pencil)} >
+        <Button className="w-10 h-10 bg-black cursor-pointer hover:bg-purple-500" onClick={() => setAction(ACTIONS.pencil)} >
           <Pencil style={{ width: '100%', height: '70%' }} />
         </Button>
-        <Button className="w-12 h-10 bg-black cursor-pointer rounded-full">
+        <Button className="w-12 h-10 bg-black cursor-pointer hover:bg-purple-500">
           <input type="color" value={fillColor} onChange={(e) => setFillColor(e.target.value)} />
         </Button>
-        <Button className="w-10 h-10 bg-black cursor-pointer rounded-full" onClick={ExportImage} >
+
+        <Button className="w-10 h-10 bg-black cursor-pointer hover:bg-purple-500" onClick={ClearCanvas} >
+          <Trash2 style={{ width: '100%', height: '70%' }} />
+        </Button>
+
+        <Button className="w-10 h-10 bg-black cursor-pointer hover:bg-purple-500" onClick={ExportImage}>
           <Download style={{ width: '100%', height: '70%' }} />
         </Button>
       </div>
