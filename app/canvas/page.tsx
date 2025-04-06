@@ -28,8 +28,8 @@ interface CircleProps {
 
 export default function Canvas() {
 
-    const [fillColor, setFillColor] = useState("#FF0000") // Default Red color
-    const [strokeColor, setStrokeColor] = useState("#FFFFFF")
+    const [fillColor, setFillColor] = useState("#C7B8EA") // Light Purple color
+    const [strokeColor, setStrokeColor] = useState("#C7B8EA")
     const [action, setAction] = useState(ACTIONS.circle)
     const [rectangles, setRectangles] = useState<RectangleProps[]>([])
     const [circles, setCircles] = useState<CircleProps[]>([])
@@ -248,8 +248,8 @@ export default function Canvas() {
             {/* Stage */}
             <Stage
                 ref={StageRef}
-                width={window.innerWidth}
-                height={window.innerHeight}
+                width={typeof window !== 'undefined' ? window.innerWidth : 800}
+                height={typeof window !== 'undefined' ? window.innerHeight : 600}
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
@@ -259,8 +259,8 @@ export default function Canvas() {
                     <Rect
                         x={0}
                         y={0}
-                        width={window.innerWidth}
-                        height={window.innerHeight}
+                        width={typeof window !== 'undefined' ? window.innerWidth : 800}
+                        height={typeof window !== 'undefined' ? window.innerHeight : 600}
                         stroke={strokeColor}
                         strokeWidth={2}
                         onClick={() => {
